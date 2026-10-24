@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api } from '../lib/api';
 import type { LogLine, StatusSnapshot } from '../types';
 
@@ -59,9 +59,11 @@ export function ConsolePage() {
   }
 
   return (
-    <div className="card" style={{ display: 'grid', gap: 10 }}>
+    <>
+    <PageHeader title="Console">Output from the server process. Commands are written to its input when Mineview owns the process.</PageHeader>
+    <div className="card stack">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <strong>Console</strong>
+        <strong>Live output</strong>
         <span className={`badge ${connected ? 'online' : 'offline'}`}>{connected ? 'Connected' : 'Reconnecting'}</span>
       </div>
       {status?.commandBlockReason && <p className="help">{status.commandBlockReason}</p>}
@@ -98,5 +100,6 @@ export function ConsolePage() {
           }} />
       </form>
     </div>
+    </>
   );
 }

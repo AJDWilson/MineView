@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import { formatTime } from '../lib/format';
 import type { TaskInfo } from '../types';
@@ -11,8 +11,10 @@ export function TasksPage() {
   async function load() { setTasks((await api<{ tasks: TaskInfo[] }>('/api/tasks')).tasks); }
   useEffect(() => { void load().catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Could not load tasks', 'err')); }, [toast]);
   return (
-    <div className="card" style={{ display: 'grid', gap: 12 }}>
-      <p className="help">Schedules survive an application restart. Overlapping backups and restarts are skipped. Crash recovery is configured per server in Settings, not as a destructive task.</p>
+    <>
+    <PageHeader title="Scheduled tasks">Schedules survive an application restart. Overlapping backups and restarts are skipped.</PageHeader>
+    <div className="card stack">
+      <p className="help">Crash recovery is configured per server in Settings, not as a destructive task.</p>
       <form className="row" onSubmit={(event) => {
         event.preventDefault();
         void api('/api/tasks', { method: 'POST', body: JSON.stringify({
@@ -52,5 +54,6 @@ export function TasksPage() {
       </table>
       {tasks.length === 0 && <p className="empty">No scheduled tasks.</p>}
     </div>
+    </>
   );
 }

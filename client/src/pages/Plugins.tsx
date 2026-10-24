@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Confirm, useToast } from '../components/ui';
+import { Confirm, PageHeader, useToast } from '../components/ui';
 import { api, ApiError, upload } from '../lib/api';
 import { formatBytes, formatTime } from '../lib/format';
 import type { CompatibilityStatus, InstalledPlugin, MarketplaceTarget, PluginPreview, PluginProjectDetail, PluginSearchHit, PluginSource, ServerSoftware } from '../types';
@@ -11,6 +11,12 @@ const STATUS_LABEL: Record<CompatibilityStatus, string> = {
   possible: 'Possibly compatible',
   incompatible: 'Incompatible',
   unknown: 'Unknown',
+};
+const SOURCE_LABEL: Record<PluginSource, string> = {
+  modrinth: 'Modrinth',
+  hangar: 'Hangar',
+  spiget: 'Spigot',
+  manual: 'Manual',
 };
 
 export function PluginsPage() {
@@ -97,17 +103,17 @@ export function PluginsPage() {
 
   return (
     <>
-      <div className="row">
+      <PageHeader title="Plugins">Plugins are untrusted code that runs inside the Minecraft server. Mineview does not execute the JAR. Installing a file does not load it until the server restarts.</PageHeader>
+      <div className="tabs">
         <button className={tab === 'discover' ? 'btn primary' : 'btn'} onClick={() => setTab('discover')}>Marketplace</button>
-        <button className={tab === 'installed' ? 'btn primary' : 'btn'} onClick={() => setTab('installed')}>Installed plugins</button>
+        <button className={tab === 'installed' ? 'btn primary' : 'btn'} onClick={() => setTab('installed')}>Installed</button>
         <button className={tab === 'upload' ? 'btn primary' : 'btn'} onClick={() => setTab('upload')}>Manual install</button>
       </div>
-      <p className="help">Plugins are untrusted code that runs inside the Minecraft server. Mineview does not execute the JAR. Installing a file does not load it until the server restarts.</p>
       {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
       {busy && <p className="help">{busy}…</p>}
       {tab === 'discover' && (
         <div style={{ display: 'grid', gap: 12 }}>
-          <section className="card" style={{ display: 'grid', gap: 8 }}>
+          <section className="card stack">
             <strong>Server target</strong>
             <p className="help">Detected {target?.detectedSoftware ?? 'unknown'} {target?.detectedVersion ?? '(version unavailable)'}{target?.build ? ` · build ${target.build}` : ''}. Filters use the values below, including a manual override.</p>
             <div className="row">
@@ -118,12 +124,12 @@ export function PluginsPage() {
               <button className="btn" onClick={() => void saveTarget()}>Save as this server</button>
             </div>
           </section>
-          <form className="card row" onSubmit={(event) => { event.preventDefault(); void search(0); }}>
-            <input className="input" placeholder="Search plugins" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Plugin search" />
+          <form className="card toolbar" onSubmit={(event) => { event.preventDefault(); void search(0); }}>
+            <input className="input grow" placeholder="Search plugins" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Plugin search" />
             <select className="select" value={source} onChange={(event) => setSource(event.target.value as typeof source)} aria-label="Repository">
               <option value="modrinth">Modrinth</option>
               <option value="hangar">Hangar</option>
-              <option value="spiget">Spiget</option>
+              <option value="spiget">Spigot</option>
             </select>
             <select className="select" value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Category">
               {CATEGORIES.map((item) => <option key={item || 'all'} value={item}>{item || 'Any category'}</option>)}
@@ -140,9 +146,10 @@ export function PluginsPage() {
               <option value="incompatible">Incompatible</option>
               <option value="unknown">Unknown</option>
             </select>
-            <label><input type="checkbox" checked={strict} onChange={(event) => setStrict(event.target.checked)} /> Ask the repository to pre-filter</label>
+            <label className="check"><input type="checkbox" checked={strict} onChange={(event) => setStrict(event.target.checked)} /> Pre-filter at the repository</label>
             <button className="btn primary" disabled={Boolean(busy)}>Search</button>
           </form>
+          {source === 'spiget' && <p className="help">Spigot results come from the public SpigotMC index. Premium and externally hosted downloads stay on the project page.</p>}
           <div className="plugin-grid">
             {shown.map((hit) => (
               <article key={`${hit.source}-${hit.projectId}`} className="card plugin-card">
@@ -153,14 +160,14 @@ export function PluginsPage() {
                     <div className="help">{hit.author}</div>
                   </div>
                 </div>
-                <p>{hit.description}</p>
+                <p className="desc">{hit.description}</p>
                 <div className="row">
                   <span className={`badge ${hit.compatibility}`}>{STATUS_LABEL[hit.compatibility]}</span>
-                  <span className="badge">{hit.source}</span>
+                  <span className="badge">{SOURCE_LABEL[hit.source]}</span>
                 </div>
                 <p className="help">{hit.downloads == null ? 'Downloads unavailable' : `${hit.downloads.toLocaleString()} downloads`}{hit.rating == null ? '' : ` · rating ${hit.rating.toFixed(1)}`}</p>
                 <p className="help">Latest checked release: {hit.latestVersion ?? 'Unavailable'}</p>
-                <p className="help">Platforms: {hit.loaders.join(', ') || 'Unavailable'} · Minecraft: {hit.gameVersions.slice(0, 4).join(', ') || 'Unavailable'}</p>
+                <p className="help">Platforms: {hit.loaders.join(', ') || 'Unavailable'} · Minecraft: {(hit.gameVersions.length > 4 ? hit.gameVersions.slice(-4) : hit.gameVersions).join(', ') || 'Unavailable'}</p>
                 {hit.dependencies.length > 0 && <p className="help">Required: {hit.dependencies.map((item) => item.title || item.projectId).join(', ')}</p>}
                 <p className="help">{hit.compatibilityReason}</p>
                 <div className="row">
@@ -214,7 +221,7 @@ export function PluginsPage() {
             <tbody>
               {installed.map((plugin) => (
                 <tr key={plugin.file}>
-                  <td>{plugin.name}{plugin.identified ? '' : ' (unidentified)'}{plugin.source ? ` · ${plugin.source}` : ''}</td>
+                  <td>{plugin.name}{plugin.identified ? '' : ' (unidentified)'}{plugin.source ? ` · ${SOURCE_LABEL[plugin.source]}` : ''}</td>
                   <td>{plugin.version ?? 'Unavailable'}</td>
                   <td>{plugin.file}</td>
                   <td>{formatBytes(plugin.size)}</td>

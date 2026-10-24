@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api, ApiError, upload } from '../lib/api';
 import { formatBytes, formatTime } from '../lib/format';
 import type { FileEntry } from '../types';
@@ -21,6 +21,8 @@ export function FilesPage() {
   useEffect(() => { void open().catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Could not open the folder', 'err')); }, [toast]);
 
   return (
+    <>
+    <PageHeader title="Files">Everything here is inside the selected server folder.</PageHeader>
     <div className="grid-stats" style={{ gridTemplateColumns: '1.2fr .8fr' }}>
       <div className="card">
         <div className="row">
@@ -78,5 +80,6 @@ export function FilesPage() {
         ) : <p className="empty">Choose a text file to edit. Binary files can be downloaded but not edited.</p>}
       </div>
     </div>
+    </>
   );
 }

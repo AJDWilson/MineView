@@ -85,7 +85,10 @@ test('schedules, log lines, downloads, and backup filters', () => {
   const hit = mapModrinthHit({ project_id: 'abc', slug: 'example', title: 'Example', description: 'A plugin', author: 'Ada', downloads: 10, categories: ['paper'], versions: ['1.21.1'], project_type: 'plugin' });
   assert.equal(hit.source, 'modrinth');
   assert.match(decodeURIComponent(modrinthSearchUrl({ source: 'modrinth', q: 'luck', sort: 'downloads', offset: 0, limit: 12, projectType: 'plugin', loader: 'paper' })), /project_type:plugin/);
-  assert.match(spigetSearchUrl({ source: 'spiget', q: 'luck perms', sort: 'downloads', offset: 12, limit: 12, projectType: 'plugin' }), /search\/resources\/luck%20perms/);
+  const spigetUrl = decodeURIComponent(spigetSearchUrl({ source: 'spiget', q: 'luck perms', sort: 'downloads', offset: 12, limit: 12, projectType: 'plugin' }));
+  assert.match(spigetUrl, /search\/resources\/luck perms/);
+  assert.match(spigetUrl, /fields=id,name,tag/);
+  assert.match(spigetUrl, /sort=-downloads/);
   assert.equal(classifyRelease({ software: 'paper', mcVersion: '1.21.1' }, { loaders: ['paper'], gameVersions: ['1.21.1'] }).status, 'compatible');
   assert.equal(classifyRelease({ software: 'spigot', mcVersion: '1.21.1' }, { loaders: ['paper'], gameVersions: ['1.21.1'] }).status, 'incompatible');
   assert.equal(classifyRelease({ software: 'paper', mcVersion: '1.21.1' }, { loaders: ['spigot'], gameVersions: ['1.21.1'] }).status, 'possible');

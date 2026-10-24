@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Confirm, useToast } from '../components/ui';
+import { Confirm, PageHeader, useToast } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import { formatDuration, formatTime, show } from '../lib/format';
 import type { AccessSnapshot, PlayerRow } from '../types';
@@ -33,12 +33,13 @@ export function PlayersPage() {
 
   return (
     <>
-      <div className="row">
+      <PageHeader title="Players">Online players, bans, the whitelist, and operators.</PageHeader>
+      <div className="tabs">
         <button className={tab === 'players' ? 'btn primary' : 'btn'} onClick={() => setTab('players')}>Players</button>
         <button className={tab === 'bans' ? 'btn primary' : 'btn'} onClick={() => setTab('bans')}>Bans</button>
         <button className={tab === 'access' ? 'btn primary' : 'btn'} onClick={() => setTab('access')}>Whitelist and operators</button>
-        <input className="input" style={{ maxWidth: 240 }} placeholder="Search name or UUID" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search players" />
       </div>
+      <input className="input" style={{ maxWidth: 280 }} placeholder="Search name or UUID" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search players" />
       {access?.permissionPlugins.length ? <p className="help">Permission plugin detected: {access.permissionPlugins.join(', ')}. Operator status is separate from that plugin’s groups.</p> : null}
       {tab === 'players' && (
         <div className="card table-wrap">

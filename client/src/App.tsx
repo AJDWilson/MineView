@@ -23,7 +23,7 @@ export function App() {
   useEffect(() => {
     api<MeResponse>('/api/me').then(setMe).catch(() => setMe(null));
   }, []);
-  if (me === undefined) return <div className="content">Loading Mineview…</div>;
+  if (me === undefined) return <div className="boot"><img src="/logo.png" alt="Mineview" /></div>;
   return (
     <ToastProvider>
       <Routes>

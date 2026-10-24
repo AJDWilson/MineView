@@ -49,11 +49,11 @@ export function Shell({ me, onMe }: { me: MeResponse; onMe: (me: MeResponse) => 
   return (
     <div className="shell">
       <aside className={open ? 'sidebar open' : 'sidebar'}>
-        <div>
-          <strong>Mineview</strong>
-          <div className="help">Local server control</div>
+        <div className="brand">
+          <img className="brand-logo" src="/logo.png" alt="Mineview" />
+          <div className="brand-note">Local server control</div>
         </div>
-        <nav style={{ display: 'grid', gap: 4 }}>
+        <nav className="nav">
           {links.map(([to, label, Icon]) => (
             <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>
               <Icon size={16} /> {label}
@@ -65,9 +65,12 @@ export function Shell({ me, onMe }: { me: MeResponse; onMe: (me: MeResponse) => 
         <header className="topbar">
           <div className="row">
             <button className="btn menu-btn" onClick={() => setOpen((value) => !value)} aria-label="Open menu"><Menu size={16} /></button>
-            <select className="select" style={{ width: 220 }} value={me.activeProfileId ?? ''} onChange={(event) => void activate(event.target.value)} aria-label="Active server">
-              {me.profiles.map((profile: Profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
-            </select>
+            <label className="server-switch">
+              <span>Server</span>
+              <select className="select" value={me.activeProfileId ?? ''} onChange={(event) => void activate(event.target.value)} aria-label="Active server">
+                {me.profiles.map((profile: Profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+              </select>
+            </label>
             <span className={`badge ${status?.status ?? 'offline'}`}>{status?.status ?? 'offline'}</span>
           </div>
           <button className="btn ghost" onClick={() => { void api('/api/auth/logout', { method: 'POST', body: '{}' }).then(() => navigate('/login')); }}>Sign out</button>

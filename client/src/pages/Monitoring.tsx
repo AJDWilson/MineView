@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { PageHeader } from '../components/ui';
 import { api } from '../lib/api';
 import { formatBytes, formatDuration, formatTime, show } from '../lib/format';
 import type { MetricPoint, StatusSnapshot } from '../types';
@@ -14,6 +15,7 @@ export function MonitoringPage() {
   }, [range]);
   return (
     <>
+      <PageHeader title="Monitoring">Process and disk readings from this machine. TPS and MSPT stay unavailable unless the server reports them.</PageHeader>
       <div className="row">
         <span className={`badge ${status?.health ?? 'offline'}`}>Health: {status?.health ?? 'offline'}</span>
         <select className="select" style={{ maxWidth: 140 }} value={range} onChange={(event) => setRange(event.target.value)} aria-label="History range"><option value="1h">1 hour</option><option value="6h">6 hours</option><option value="24h">24 hours</option></select>

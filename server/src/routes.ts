@@ -207,7 +207,7 @@ export function mountApi(app: Express, services: AppServices): void {
     const source = isRepositorySource(requested) ? requested : 'modrinth';
     if (source === 'modrinth' && !settings.modrinthEnabled) throw new HttpError(400, 'Modrinth is disabled in Settings', 'DISABLED');
     if (source === 'hangar' && !settings.hangarEnabled) throw new HttpError(400, 'Hangar is disabled in Settings', 'DISABLED');
-    if (source === 'spiget' && !settings.spigetEnabled) throw new HttpError(400, 'Spiget is disabled in Settings', 'DISABLED');
+    if (source === 'spiget' && !settings.spigetEnabled) throw new HttpError(400, 'Spigot is disabled in Settings', 'DISABLED');
     const detected = await marketplaceTarget(profile);
     const loader = req.query.loader ? String(req.query.loader) : '';
     const software = isSoftware(loader) ? loader : profile.software !== 'unknown' ? profile.software : detected.detectedSoftware;

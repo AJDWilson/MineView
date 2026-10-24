@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { MarketplaceTarget, PluginSearchHit, Profile, ServerSoftware } from '../../../shared/types.ts';
 import { serverBuildFromText } from '../util/detect.ts';
-import { chooseRelease, type ServerTarget } from './compatibility.ts';
+import { chooseRelease, classifyRelease, type ServerTarget } from './compatibility.ts';
 import { inspectServer } from './discovery.ts';
 import { projectDetail, searchPlugins, type SearchQuery } from './repositories.ts';
 
@@ -50,6 +50,15 @@ export async function searchCatalogue(profile: Profile, query: SearchQuery, targ
 async function annotate(hit: PluginSearchHit, target: ServerTarget): Promise<PluginSearchHit> {
   if (hit.blockedReason) {
     return { ...hit, compatibility: 'unknown', compatibilityReason: hit.blockedReason, installable: false };
+  }
+  if (hit.source === 'spiget') {
+    const judged = classifyRelease(target, { loaders: hit.loaders, gameVersions: hit.gameVersions });
+    return {
+      ...hit,
+      compatibility: judged.status,
+      compatibilityReason: `${judged.reason} Spigot publishes tested Minecraft versions on the resource, not on each file.`,
+      installable: Boolean(hit.latestVersionId) && (judged.status === 'compatible' || judged.status === 'possible'),
+    };
   }
   try {
     const detail = await Promise.race([

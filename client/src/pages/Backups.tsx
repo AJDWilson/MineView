@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api, ApiError, upload } from '../lib/api';
 import { formatBytes, formatTime } from '../lib/format';
 import type { BackupInfo } from '../types';
@@ -18,8 +18,10 @@ export function BackupsPage() {
   }
   useEffect(() => { void load().catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Could not list backups', 'err')); }, [toast]);
   return (
-    <div className="card" style={{ display: 'grid', gap: 12 }}>
-      <p className="help">Backups are stored outside the server directory ({directory || 'Unavailable'}). A running server is asked to save-all flush when Mineview owns the console. Otherwise the archive may be inconsistent.</p>
+    <>
+    <PageHeader title="Backups">Archives are stored outside the server directory ({directory || 'Unavailable'}).</PageHeader>
+    <div className="card stack">
+      <p className="help">A running server is asked to save-all flush when Mineview owns the console. Otherwise the archive may be inconsistent.</p>
       <div className="row">
         <select className="select" style={{ maxWidth: 180 }} value={kind} onChange={(event) => setKind(event.target.value)} aria-label="Backup contents">
           <option value="full">Full</option><option value="worlds">Worlds</option><option value="plugins">Plugins</option><option value="config">Configuration</option>
@@ -73,5 +75,6 @@ export function BackupsPage() {
         </form>
       )}
     </div>
+    </>
   );
 }

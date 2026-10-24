@@ -46,7 +46,7 @@ Each profile stores its own directory, JAR, Java path, JVM arguments, and launch
 - Start, graceful stop, restart, and emergency kill for processes Mineview launched
 - Live console over WebSockets, with commands written to the server’s stdin
 - Dashboard metrics from the process, `server.properties`, logs, and the filesystem. Missing values stay “Unavailable”
-- Modrinth, Hangar, and Spiget search. A release is Compatible only when that repository lists both this server platform and Minecraft version. Related platforms are Possibly compatible. Missing data stays Unknown. JARs download into `plugins` or `mods` and are not executed.
+- Modrinth, Hangar, and Spigot search. Spigot results come from the public Spiget index of SpigotMC. A release is Compatible only when that repository lists both this server platform and Minecraft version. Related platforms are Possibly compatible. Missing data stays Unknown. JARs download into `plugins` or `mods` and are not executed.
 - Manual JAR upload (zip header check only; the JAR is never executed by the panel)
 - Installed plugin list from the real plugin folder, including Open in Explorer
 - Kick, ban, temporary ban, pardon, teleport, and private message through Minecraft commands when the console is attached

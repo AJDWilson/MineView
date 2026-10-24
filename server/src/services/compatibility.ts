@@ -92,7 +92,8 @@ function combine(version: CompatibilityStatus, platform: CompatibilityStatus): C
 function reasonFor(target: ServerTarget, version: CompatibilityStatus, platform: CompatibilityStatus, release: ReleaseFacts): string {
   const platforms = release.loaders.length ? release.loaders.join(', ') : 'no platform listed';
   const versions = gameVersionsOf(release.gameVersions);
-  const versionText = versions.length ? versions.slice(0, 6).join(', ') : 'no Minecraft version listed';
+  const shown = versions.length > 6 ? versions.slice(-6) : versions;
+  const versionText = shown.length ? shown.join(', ') : 'no Minecraft version listed';
   if (platform === 'incompatible') {
     return `Listed platforms (${platforms}) do not include ${target.software}. A download existing is not treated as compatibility.`;
   }

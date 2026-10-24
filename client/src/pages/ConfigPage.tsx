@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import type { ConfigFileInfo, PropertyField } from '../types';
 
@@ -30,17 +30,24 @@ export function ConfigPage() {
     setMode('raw');
   }
 
+  const fileValue = mode === 'form' ? '__form__' : rawPath;
+
   return (
-    <div className="grid-stats" style={{ gridTemplateColumns: '220px 1fr' }}>
-      <div className="card">
-        {files.map((file) => <button key={file.path} className="btn ghost" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => void openRaw(file.path)}>{file.name}</button>)}
-        {files.length === 0 && <p className="empty">No configuration files were found.</p>}
-      </div>
-      <div className="card" style={{ display: 'grid', gap: 10 }}>
-        <div className="row">
-          <button className={mode === 'form' ? 'btn primary' : 'btn'} onClick={() => setMode('form')}>server.properties form</button>
-          <button className={mode === 'raw' ? 'btn primary' : 'btn'} onClick={() => void openRaw(rawPath)}>Raw file</button>
-        </div>
+    <>
+      <PageHeader title="Configuration">Edit server.properties as labeled fields, or open another file as text. Each save keeps a backup.</PageHeader>
+      <div className="card stack">
+        <label className="field">
+          <span>File</span>
+          <select className="select" aria-label="Configuration file" value={fileValue} onChange={(event) => {
+            const next = event.target.value;
+            if (next === '__form__') setMode('form');
+            else void openRaw(next);
+          }}>
+            <option value="__form__">server.properties form</option>
+            {files.map((file) => <option key={file.path} value={file.path}>{file.name}</option>)}
+          </select>
+        </label>
+        {files.length === 0 && <p className="help">No extra configuration files were found yet. The form still edits server.properties.</p>}
         {mode === 'form' ? (
           <form style={{ display: 'grid', gap: 10 }} onSubmit={(event) => {
             event.preventDefault();
@@ -60,7 +67,7 @@ export function ConfigPage() {
             <button className="btn primary">Save server.properties</button>
           </form>
         ) : (
-          <form style={{ display: 'grid', gap: 10 }} onSubmit={(event) => { event.preventDefault(); void api('/api/config/file', { method: 'PUT', body: JSON.stringify({ path: rawPath, content: raw, hash: rawHash }) }).then(() => toast('Saved')).catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Save failed', 'err')); }}>
+          <form className="stack" onSubmit={(event) => { event.preventDefault(); void api('/api/config/file', { method: 'PUT', body: JSON.stringify({ path: rawPath, content: raw, hash: rawHash }) }).then(() => toast('Saved')).catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Save failed', 'err')); }}>
             <strong>{rawPath}</strong>
             <textarea className="textarea" value={raw} onChange={(event) => setRaw(event.target.value)} aria-label="Raw configuration" />
             <div className="row">
@@ -70,6 +77,6 @@ export function ConfigPage() {
           </form>
         )}
       </div>
-    </div>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import { Play, RotateCcw, Skull, Square } from 'lucide-react';
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Confirm, Modal, useToast } from '../components/ui';
+import { Confirm, Modal, PageHeader, useToast } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import { formatBytes, formatDuration, formatTime, show } from '../lib/format';
 import type { StatusSnapshot } from '../types';
@@ -22,7 +22,8 @@ export function Dashboard() {
   };
   return (
     <>
-      <div className="row">
+      <PageHeader title="Dashboard">Live status for the selected server. Values that cannot be read stay unavailable.</PageHeader>
+      <div className="card row">
         <button className="btn primary" disabled={!status.canStart} onClick={() => void run('/api/server/start')}><Play size={16} /> Start</button>
         <button className="btn" disabled={!status.canStop} onClick={() => void run('/api/server/stop')}><Square size={16} /> Stop</button>
         <button className="btn" disabled={!status.canRestart} onClick={() => setConfirm('restart')}><RotateCcw size={16} /> Restart</button>

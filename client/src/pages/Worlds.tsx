@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import { formatBytes, formatTime } from '../lib/format';
 import type { WorldInfo } from '../types';
@@ -17,8 +17,10 @@ export function WorldsPage() {
   }
   useEffect(() => { void load().catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Could not list worlds', 'err')); }, [toast]);
   return (
+    <>
+    <PageHeader title="Worlds">Configured world: {levelName || 'Unavailable'}. Deleting a world requires the server to be stopped.</PageHeader>
     <div className="card table-wrap">
-      <p className="help">Configured world: {levelName || 'Unavailable'}. Deleting a world requires the server to be stopped. The folder is archived outside the server directory before it is removed. Restore a world from Backups by choosing that archive and its folder.</p>
+      <p className="help">The folder is archived outside the server directory before it is removed. Restore a world from Backups by choosing that archive and its folder.</p>
       <table>
         <thead><tr><th>World</th><th>Size</th><th>Modified</th><th></th></tr></thead>
         <tbody>
@@ -45,5 +47,6 @@ export function WorldsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

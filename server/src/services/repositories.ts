@@ -100,11 +100,19 @@ export async function searchPlugins(query: SearchQuery): Promise<{ hits: PluginS
       return value;
     }
     const response = await fetchAllowlisted(spigetSearchUrl(query), { timeoutMs: 20_000 });
-    if (response.status === 429) throw new HttpError(429, 'Spiget rate limit reached. Try again shortly.', 'RATE_LIMIT');
-    if (!response.ok) throw new HttpError(502, `Spiget search failed (${response.status})`, 'UPSTREAM');
-    const body = await response.json() as SpigetResource[];
+    if (response.status === 404) {
+      const empty = { hits: [], total: 0 };
+      cache.set(key, { at: Date.now(), value: empty });
+      return empty;
+    }
+    if (response.status === 429) throw new HttpError(429, 'Spigot rate limit reached. Try again shortly.', 'RATE_LIMIT');
+    if (!response.ok) throw new HttpError(502, `Spigot search failed (${response.status})`, 'UPSTREAM');
+    const body = await response.json() as unknown;
+    if (!Array.isArray(body)) throw new HttpError(502, 'Spigot search returned an unexpected response', 'UPSTREAM');
+    const resources = body as SpigetResource[];
+    const hits = await enrichSpigetHits(resources, resources.map(mapSpigetHit));
     const totalHeader = Number(response.headers.get('x-total-count'));
-    const value = { hits: body.map(mapSpigetHit), total: Number.isFinite(totalHeader) && totalHeader > 0 ? totalHeader : null };
+    const value = { hits, total: Number.isFinite(totalHeader) && totalHeader > 0 ? totalHeader : null };
     cache.set(key, { at: Date.now(), value });
     return value;
   } catch (error) {
@@ -250,7 +258,11 @@ export async function resolveDownload(source: PluginSource, projectId: string, v
 
 export function spigetSearchUrl(query: SearchQuery): string {
   const page = Math.floor(query.offset / query.limit) + 1;
-  const params = new URLSearchParams({ size: String(query.limit), page: String(page) });
+  const params = new URLSearchParams({
+    size: String(query.limit),
+    page: String(page),
+    fields: 'id,name,tag,downloads,updateDate,premium,external,testedVersions,version,author,category,rating',
+  });
   if (query.sort === 'downloads') params.set('sort', '-downloads');
   if (query.sort === 'updated') params.set('sort', '-updateDate');
   return `https://api.spiget.org/v2/search/resources/${encodeURIComponent(query.q || 'plugin')}?${params}`;
@@ -269,7 +281,7 @@ function mapSpigetHit(resource: SpigetResource): PluginSearchHit {
     updatedAt: resource.updateDate ? new Date(resource.updateDate * 1000).toISOString() : null,
     categories: resource.category?.name ? [resource.category.name] : [],
     gameVersions: tested,
-    iconUrl: spigetIcon(resource.icon?.url),
+    iconUrl: safeIcon(`https://api.spiget.org/v2/resources/${resource.id}/icon`),
     projectUrl: `https://www.spigotmc.org/resources/${resource.id}/`,
     rating: resource.rating?.average ?? null,
     loaders: ['spigot'],
@@ -286,19 +298,20 @@ function mapSpigetHit(resource: SpigetResource): PluginSearchHit {
 async function spigetProject(projectId: string): Promise<PluginProjectDetail> {
   const id = spigetId(projectId);
   const projectRes = await fetchAllowlisted(`https://api.spiget.org/v2/resources/${id}`, { timeoutMs: 20_000 });
-  if (!projectRes.ok) throw new HttpError(502, `Spiget project lookup failed (${projectRes.status})`, 'UPSTREAM');
+  if (!projectRes.ok) throw new HttpError(502, `Spigot project lookup failed (${projectRes.status})`, 'UPSTREAM');
   const project = await projectRes.json() as SpigetResource;
   const versionRes = await fetchAllowlisted(`https://api.spiget.org/v2/resources/${id}/versions?size=20&sort=-releaseDate`, { timeoutMs: 20_000 });
-  if (!versionRes.ok) throw new HttpError(502, `Spiget versions lookup failed (${versionRes.status})`, 'UPSTREAM');
+  if (!versionRes.ok) throw new HttpError(502, `Spigot versions lookup failed (${versionRes.status})`, 'UPSTREAM');
   const versions = await versionRes.json() as SpigetVersion[];
   const tested = project.testedVersions ?? [];
+  const author = project.author?.name ?? (project.author?.id ? await lookupSpigetAuthor(project.author.id) : null);
   return {
     source: 'spiget',
     projectId: String(project.id),
     title: project.name,
     description: project.tag ?? '',
     body: (project.description ?? project.tag ?? '').slice(0, 8000),
-    author: project.author?.name ?? 'Unknown',
+    author: author ?? 'Unknown',
     downloads: project.downloads ?? null,
     categories: project.category?.name ? [project.category.name] : [],
     sourceUrl: httpsOrNull(project.sourceCodeLink),
@@ -318,7 +331,7 @@ async function spigetProject(projectId: string): Promise<PluginProjectDetail> {
       changelog: null,
       dependencies: [],
       compatibility: 'unknown' as const,
-      compatibilityReason: 'Spiget publishes tested Minecraft versions on the resource, not on each release.',
+      compatibilityReason: 'Spigot publishes tested Minecraft versions on the resource, not on each release.',
     })),
   };
 }
@@ -326,16 +339,16 @@ async function spigetProject(projectId: string): Promise<PluginProjectDetail> {
 async function resolveSpigetDownload(projectId: string, versionId: string): Promise<{ url: string; filename: string; size: number | null; sha1: string | null; gameVersions: string[]; loaders: string[]; dependencies: { projectId: string; required: boolean }[] }> {
   const id = spigetId(projectId);
   const projectRes = await fetchAllowlisted(`https://api.spiget.org/v2/resources/${id}`, { timeoutMs: 20_000 });
-  if (!projectRes.ok) throw new HttpError(502, 'Spiget resource lookup failed', 'UPSTREAM');
+  if (!projectRes.ok) throw new HttpError(502, 'Spigot resource lookup failed', 'UPSTREAM');
   const project = await projectRes.json() as SpigetResource;
   if (project.premium || project.external) {
     throw new HttpError(400, 'This Spigot resource is premium or hosted externally. Open the project page instead of downloading it here.', 'EXTERNAL');
   }
   const versionRes = await fetchAllowlisted(`https://api.spiget.org/v2/resources/${id}/versions?size=1&sort=-releaseDate`, { timeoutMs: 20_000 });
-  if (!versionRes.ok) throw new HttpError(502, 'Spiget version lookup failed', 'UPSTREAM');
+  if (!versionRes.ok) throw new HttpError(502, 'Spigot version lookup failed', 'UPSTREAM');
   const newest = ((await versionRes.json()) as SpigetVersion[])[0];
   if (!newest || String(newest.id) !== versionId) {
-    throw new HttpError(400, 'Spiget only provides a direct file for the newest free release. Older versions stay on the project page.', 'NO_DIRECT_FILE');
+    throw new HttpError(400, 'Spigot only provides a direct file for the newest free release. Older versions stay on the project page.', 'NO_DIRECT_FILE');
   }
   return {
     url: `https://api.spiget.org/v2/resources/${id}/download`,
@@ -368,16 +381,64 @@ function unclassified(loaders: string[]): Pick<PluginSearchHit, 'rating' | 'load
   };
 }
 
-function spigetId(projectId: string): string {
-  if (!/^\d+$/.test(projectId)) throw new HttpError(400, 'Spiget resource id must be numeric', 'BAD_ID');
-  return projectId;
+const spigetAuthors = new Map<number, string>();
+const spigetVersions = new Map<string, string>();
+
+async function enrichSpigetHits(resources: SpigetResource[], hits: PluginSearchHit[]): Promise<PluginSearchHit[]> {
+  const results = hits.slice();
+  let cursor = 0;
+  const run = async () => {
+    while (cursor < results.length) {
+      const index = cursor;
+      cursor += 1;
+      const hit = results[index];
+      const resource = resources[index];
+      if (!hit || !resource) continue;
+      const [author, versionName] = await Promise.all([
+        resource.author?.id ? lookupSpigetAuthor(resource.author.id) : Promise.resolve(hit.author),
+        hit.latestVersionId ? lookupSpigetVersion(hit.projectId) : Promise.resolve(null),
+      ]);
+      results[index] = { ...hit, author: author || hit.author, latestVersion: versionName ?? hit.latestVersion };
+    }
+  };
+  const work = Promise.all(Array.from({ length: Math.min(4, results.length) }, () => run()));
+  await Promise.race([work, new Promise((resolve) => setTimeout(resolve, 4000))]);
+  return results;
 }
 
-function spigetIcon(url: string | null | undefined): string | null {
-  if (!url || url.startsWith('data:')) return null;
-  if (url.startsWith('https://')) return safeIcon(url);
-  if (url.startsWith('http://')) return null;
-  return safeIcon(`https://www.spigotmc.org/${url.replace(/^\//, '')}`);
+async function lookupSpigetAuthor(id: number): Promise<string | null> {
+  const cached = spigetAuthors.get(id);
+  if (cached) return cached;
+  try {
+    const response = await fetchAllowlisted(`https://api.spiget.org/v2/authors/${id}`, { timeoutMs: 8_000 });
+    if (!response.ok) return null;
+    const body = await response.json() as { name?: string };
+    if (!body.name) return null;
+    spigetAuthors.set(id, body.name);
+    return body.name;
+  } catch {
+    return null;
+  }
+}
+
+async function lookupSpigetVersion(projectId: string): Promise<string | null> {
+  const cached = spigetVersions.get(projectId);
+  if (cached) return cached;
+  try {
+    const response = await fetchAllowlisted(`https://api.spiget.org/v2/resources/${projectId}/versions/latest`, { timeoutMs: 8_000 });
+    if (!response.ok) return null;
+    const body = await response.json() as { name?: string };
+    if (!body.name) return null;
+    spigetVersions.set(projectId, body.name);
+    return body.name;
+  } catch {
+    return null;
+  }
+}
+
+function spigetId(projectId: string): string {
+  if (!/^\d+$/.test(projectId)) throw new HttpError(400, 'Spigot resource id must be numeric', 'BAD_ID');
+  return projectId;
 }
 
 function safeIcon(url: string | null | undefined): string | null {
@@ -461,7 +522,7 @@ interface SpigetResource {
   external?: boolean;
   testedVersions?: string[];
   sourceCodeLink?: string | null;
-  author?: { name?: string };
+  author?: { id?: number; name?: string };
   category?: { name?: string };
   rating?: { average?: number };
   icon?: { url?: string };

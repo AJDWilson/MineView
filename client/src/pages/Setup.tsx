@@ -38,10 +38,11 @@ export function Setup({ me, onDone }: { me: MeResponse; onDone: (me: MeResponse)
 
   return (
     <div className="content" style={{ maxWidth: 860, margin: '0 auto' }}>
-      <div className="card" style={{ display: 'grid', gap: 14 }}>
-        <div>
-          <h1 style={{ margin: '0 0 6px' }}>Set up your server</h1>
-          <p className="help">Mineview only reads the folder until you explicitly start the server or install a plugin. It will not download or replace an existing server.</p>
+      <img className="auth-logo" src="/logo.png" alt="Mineview" style={{ justifySelf: 'center' }} />
+      <div className="card stack">
+        <div className="page-head">
+          <h1>Set up your server</h1>
+          <p>Mineview only reads the folder until you explicitly start the server or install a plugin. It will not download or replace an existing server.</p>
         </div>
         <div className="row">
           <button className="btn" disabled={Boolean(busy)} onClick={() => void api<{ results: { directory: string; marker: string }[] }>('/api/discovery/scan', { method: 'POST', body: '{}' }).then((result) => setScan(result.results)).catch((reason: unknown) => setError(reason instanceof ApiError ? reason.message : 'Scan failed'))}>Scan common folders</button>

@@ -26,6 +26,15 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
+export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <header className="page-head">
+      <h1>{title}</h1>
+      {children ? <p>{children}</p> : null}
+    </header>
+  );
+}
+
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
     <div className="modal-back" role="presentation" onMouseDown={onClose}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import type { DiagnosticCheck, MeResponse, Profile, SettingsPublic } from '../types';
 
@@ -31,8 +31,9 @@ export function SettingsPage({ onMe }: { onMe: (me: MeResponse) => void }) {
   if (!profile) return <div className="card">No active server profile. <button className="btn" onClick={() => navigate('/setup')}>Open setup</button></div>;
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <form className="card" style={{ display: 'grid', gap: 10 }} onSubmit={(event) => {
+    <div className="stack">
+      <PageHeader title="Settings">Server launch options, appearance, repositories, and diagnostics.</PageHeader>
+      <form className="card stack" onSubmit={(event) => {
         event.preventDefault();
         void api('/api/profiles/' + profile.id, { method: 'PATCH', body: JSON.stringify(profile) }).then(() => toast('Server profile saved')).catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Could not save the profile', 'err'));
       }}>
@@ -53,7 +54,7 @@ export function SettingsPage({ onMe }: { onMe: (me: MeResponse) => void }) {
         </div>
         <button className="btn primary">Save server profile</button>
       </form>
-      <form className="card" style={{ display: 'grid', gap: 10 }} onSubmit={(event) => {
+      <form className="card stack" onSubmit={(event) => {
         event.preventDefault();
         document.documentElement.dataset.theme = settings.theme;
         document.documentElement.dataset.accent = settings.accent;
@@ -72,9 +73,11 @@ export function SettingsPage({ onMe }: { onMe: (me: MeResponse) => void }) {
           <label className="field"><span>Disk warning %</span><input className="input" type="number" value={settings.diskWarnPercent} onChange={(event) => setSettings({ ...settings, diskWarnPercent: Number(event.target.value) })} /></label>
         </div>
         <label><input type="checkbox" checked={settings.excludeLogs} onChange={(event) => setSettings({ ...settings, excludeLogs: event.target.checked })} /> Exclude logs from backups</label>
-        <label><input type="checkbox" checked={settings.modrinthEnabled} onChange={(event) => setSettings({ ...settings, modrinthEnabled: event.target.checked })} /> Modrinth</label>
-        <label><input type="checkbox" checked={settings.hangarEnabled} onChange={(event) => setSettings({ ...settings, hangarEnabled: event.target.checked })} /> Hangar</label>
-        <label><input type="checkbox" checked={settings.spigetEnabled} onChange={(event) => setSettings({ ...settings, spigetEnabled: event.target.checked })} /> Spiget</label>
+        <div className="row">
+          <label className="check"><input type="checkbox" checked={settings.modrinthEnabled} onChange={(event) => setSettings({ ...settings, modrinthEnabled: event.target.checked })} /> Modrinth</label>
+          <label className="check"><input type="checkbox" checked={settings.hangarEnabled} onChange={(event) => setSettings({ ...settings, hangarEnabled: event.target.checked })} /> Hangar</label>
+          <label className="check"><input type="checkbox" checked={settings.spigetEnabled} onChange={(event) => setSettings({ ...settings, spigetEnabled: event.target.checked })} /> Spigot</label>
+        </div>
         <label className="field"><span>Discord webhook</span><input className="input" value={settings.discordWebhook} onChange={(event) => setSettings({ ...settings, discordWebhook: event.target.value })} placeholder="https://discord.com/api/webhooks/…" /></label>
         <label><input type="checkbox" checked={settings.allowRemote} onChange={(event) => setSettings({ ...settings, allowRemote: event.target.checked })} /> Allow non-loopback binding after restart</label>
         <div className="row">
