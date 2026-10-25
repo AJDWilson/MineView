@@ -5,10 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { startServer } from '../src/app.ts';
 
-const password = 'test-password-123';
-
 async function fixture() {
-  process.env.MINEVIEW_INITIAL_PASSWORD = password;
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mv-api-'));
   const serverDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'mv-server-')));
   fs.writeFileSync(path.join(serverDir, 'server.properties'), 'server-port=25565\nmotd=Hello\nmax-players=10\ndifficulty=easy\nlevel-name=world\n');
@@ -29,23 +26,17 @@ async function fixture() {
     const text = await response.text();
     return { status: response.status, data: text ? JSON.parse(text) as Record<string, unknown> : {} };
   };
-  const login = await fetch(`${running.url}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-  cookie = (login.headers.getSetCookie?.() ?? []).map((entry) => entry.split(';')[0]).join('; ');
-  csrf = ((await login.json()) as { csrf: string }).csrf;
+  const opened = await fetch(`${running.url}/api/me`);
+  cookie = (opened.headers.getSetCookie?.() ?? []).map((entry) => entry.split(';')[0]).join('; ');
+  const csrfCookie = cookie.split('; ').find((entry) => entry.startsWith('mv_csrf='));
+  csrf = csrfCookie ? decodeURIComponent(csrfCookie.slice('mv_csrf='.length)) : '';
   return { running, api, serverDir, dataDir };
 }
 
 test('api auth, profile setup, file confinement, config, and backup', async () => {
   const { running, api, serverDir, dataDir } = await fixture();
   try {
-    assert.equal((await fetch(`${running.url}/api/server/status`)).status, 401);
-    const bad = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ password: 'nope' }) });
-    assert.equal((await fetch(`${running.url}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: 'wrong-password' }) })).status, 401);
-    void bad;
+    assert.equal((await fetch(`${running.url}/api/profiles`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, 401);
     const created = await api('/api/profiles', {
       method: 'POST',
       body: JSON.stringify({

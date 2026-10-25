@@ -21,7 +21,7 @@ npm run dev
 
 Open `http://127.0.0.1:5173`. The API listens on `127.0.0.1:3847`. Vite proxies `/api` and `/ws` to it.
 
-The first launch writes a password to `data/initial-password.txt` unless you set `MINEVIEW_INITIAL_PASSWORD` (at least 10 characters) before starting. Change it in Settings after you sign in. Copy `.env.example` to `.env` only if you want a different port or data directory.
+Copy `.env.example` to `.env` only if you want a different port or data directory. The panel opens without a password.
 
 Production, after a client build:
 
@@ -32,12 +32,19 @@ npm start
 
 Then open `http://127.0.0.1:3847`.
 
+## Windows application
+
+```powershell
+npm run package:win
+```
+
+Double-click `release\Mineview\Mineview.exe`. Mineview opens in its own window. Closing the window quits the application. The panel's files stay in `release\Mineview\data`. Java is still required to start a Minecraft server. Close `npm run dev` before opening the application when both would use port 3847.
+
 ## First-time setup
 
-1. Sign in.
-2. Enter the server directory, or scan common locations. Scanning only lists folders; it does not download or change a server.
-3. Confirm the detected JAR (or Forge `win_args.txt`), Java executable, and memory.
-4. Mineview does not set `eula=true`. Edit `eula.txt` yourself if you accept Mojang’s EULA.
+1. Enter the server directory, or scan common locations. Scanning only lists folders; it does not download or change a server.
+2. Confirm the detected JAR (or Forge `win_args.txt`), Java executable, and memory.
+3. Mineview does not set `eula=true`. Edit `eula.txt` yourself if you accept Mojang’s EULA.
 
 Each profile stores its own directory, JAR, Java path, JVM arguments, and launch arguments.
 
@@ -61,9 +68,9 @@ Each profile stores its own directory, JAR, Java path, JVM arguments, and launch
 
 ## Security
 
-The panel binds to `127.0.0.1` until you enable remote access in Settings and restart. Non-loopback binding requires that confirmation. Sessions use an httpOnly cookie and a CSRF token. Filesystem operations are resolved inside the configured server directory or the backup folder. Downloads are limited to the Modrinth, GitHub, and Hangar hosts used by those repositories. Plugin JARs are not executed during install.
+The panel binds to `127.0.0.1` until you enable remote access in Settings and restart. Non-loopback binding requires that confirmation. The application window receives an httpOnly cookie on the first visit so other programs cannot call the panel. Filesystem operations are resolved inside the configured server directory or the backup folder. Downloads are limited to the Modrinth, GitHub, and Hangar hosts used by those repositories. Plugin JARs are not executed during install.
 
-Do not put the panel on the public internet. A password is not a substitute for keeping the port on localhost.
+Do not put the panel on the public internet. Keep the port on localhost.
 
 ## Limits
 

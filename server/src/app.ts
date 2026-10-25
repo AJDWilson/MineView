@@ -10,6 +10,7 @@ import { mountApi } from './routes.ts';
 import { notifyDiscord } from './services/notify.ts';
 import { ProcessManager } from './services/processManager.ts';
 import { TaskScheduler } from './services/scheduler.ts';
+import { appRoot } from './util/runtime.ts';
 import { attachWebsocket } from './ws.ts';
 
 export interface RunningServer {
@@ -26,15 +27,7 @@ export async function startServer(options: { dataDir?: string; host?: string; po
   const dataDir = options.dataDir ?? resolveDataDir();
   initLogger(dataDir);
   const db = new AppDb(dataDir);
-  const created = db.ensurePassword(process.env.MINEVIEW_INITIAL_PASSWORD);
-  if (created.created && created.password) {
-    fs.writeFileSync(
-      path.join(dataDir, 'initial-password.txt'),
-      `Mineview initial password\n\n${created.password}\n\nSign in, then change this password in Settings. This file is deleted when the password changes.\n`,
-      { encoding: 'utf8' },
-    );
-    log('info', 'Initial password written to initial-password.txt in the data folder');
-  }
+  fs.rmSync(path.join(dataDir, 'initial-password.txt'), { force: true });
   const bind = resolveBind(dataDir, db.getSettings().allowRemote, { host: options.host, port: options.port });
   const proc = new ProcessManager({
     db,
@@ -63,7 +56,7 @@ export async function startServer(options: { dataDir?: string; host?: string; po
   });
   app.use(express.json({ limit: '2mb' }));
   mountApi(app, { db, dataDir, proc, scheduler });
-  const dist = path.resolve('client/dist');
+  const dist = path.join(appRoot(), 'client', 'dist');
   if (fs.existsSync(path.join(dist, 'index.html'))) {
     app.use(express.static(dist));
     app.use((req, res, next) => {

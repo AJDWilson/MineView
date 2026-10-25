@@ -1,13 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isLoopbackHost } from './util/net.ts';
+import { appRoot } from './util/runtime.ts';
 
 export interface RuntimeFile {
   host: string;
   port: number;
 }
 
-export function loadDotEnv(cwd = process.cwd()): void {
+export function loadDotEnv(cwd = appRoot()): void {
   const file = path.join(cwd, '.env');
   if (!fs.existsSync(file)) return;
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
@@ -25,7 +26,7 @@ export function loadDotEnv(cwd = process.cwd()): void {
 }
 
 export function resolveDataDir(): string {
-  return path.resolve(process.env.DATA_DIR || path.join(process.cwd(), 'data'));
+  return path.resolve(process.env.DATA_DIR || path.join(appRoot(), 'data'));
 }
 
 export function readRuntimeFile(dataDir: string): RuntimeFile {

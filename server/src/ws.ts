@@ -9,6 +9,9 @@ import { log } from './logger.ts';
 
 export function attachWebsocket(server: Server, db: AppDb, proc: ProcessManager, getPort: () => number): WebSocketServer {
   const wss = new WebSocketServer({ server, path: '/ws' });
+  wss.on('error', (error) => {
+    log('error', 'WebSocket server error', error);
+  });
   wss.on('connection', (socket, request) => {
     const settings = db.getSettings();
     if (!isAllowedOrigin(request.headers.origin, { port: getPort(), allowRemote: settings.allowRemote })) {

@@ -420,7 +420,6 @@ export interface SettingsPublic {
 export interface MeResponse {
   authenticated: boolean;
   setupComplete: boolean;
-  initialPasswordFile: boolean;
   activeProfileId: string | null;
   profiles: Profile[];
   theme: 'dark' | 'light';

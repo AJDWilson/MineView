@@ -8,7 +8,6 @@ import { newId } from './db.ts';
 import { asyncRoute, clientIp, csrfHeader, errorHandler, rateLimit, safeEqual, sessionToken } from './http.ts';
 import { serializeCookie } from './util/cookies.ts';
 import { HttpError } from './util/errors.ts';
-import { verifyPassword, hashPassword } from './util/password.ts';
 import { assertDiscordWebhook, isLoopbackHost } from './util/net.ts';
 import { assertSchedule, computeNextRun } from './util/schedule.ts';
 import { writeRuntimeFile } from './env.ts';
@@ -54,51 +53,36 @@ export function mountApi(app: Express, services: AppServices): void {
   };
 
   app.use('/api', (req, res, next) => {
-    if (req.path === '/health' || req.path === '/auth/login') return next();
+    if (req.path === '/health') return next();
     const token = sessionToken(req);
-    const session = db.getSession(token);
+    let session = db.getSession(token);
     if (!session || !token) {
-      res.status(401).json({ error: 'Sign in required', code: 'AUTH' });
-      return;
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.status(401).json({ error: 'Refresh Mineview and try again', code: 'AUTH' });
+        return;
+      }
+      const created = db.createSession();
+      setSession(res, created.token, created.csrf);
+      session = db.getSession(created.token);
     }
     if (!['GET', 'HEAD'].includes(req.method)) {
       const header = csrfHeader(req);
-      if (!header || !safeEqual(header, session.csrf)) {
+      if (!session || !header || !safeEqual(header, session.csrf)) {
         res.status(403).json({ error: 'Security token mismatch. Refresh the page and try again.', code: 'CSRF' });
         return;
       }
     }
-    if (session.expiresAt - Date.now() < 7 * 24 * 60 * 60 * 1000) db.touchSession(token, Date.now() + MAX_AGE * 1000);
+    if (token && session && session.expiresAt - Date.now() < 7 * 24 * 60 * 60 * 1000) db.touchSession(token, Date.now() + MAX_AGE * 1000);
     next();
   });
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
-
-  app.post('/api/auth/login', asyncRoute(async (req, res) => {
-    rateLimit(`login:${clientIp(req)}`, 8, 5 * 60_000);
-    const password = String(req.body?.password ?? '');
-    const hash = db.getPasswordHash();
-    if (!hash || !verifyPassword(password, hash)) throw new HttpError(401, 'Password is incorrect', 'AUTH');
-    const session = db.createSession();
-    setSession(res, session.token, session.csrf);
-    res.json({ csrf: session.csrf });
-  }));
-
-  app.post('/api/auth/logout', asyncRoute(async (req, res) => {
-    db.deleteSession(sessionToken(req));
-    res.setHeader('Set-Cookie', [
-      serializeCookie('mv_session', '', { httpOnly: true, maxAge: 0 }),
-      serializeCookie('mv_csrf', '', { maxAge: 0 }),
-    ]);
-    res.json({ ok: true });
-  }));
 
   app.get('/api/me', asyncRoute(async (_req, res) => {
     const settings = db.getSettings();
     res.json({
       authenticated: true,
       setupComplete: db.listProfiles().length > 0,
-      initialPasswordFile: fs.existsSync(path.join(services.dataDir, 'initial-password.txt')),
       activeProfileId: settings.activeProfileId,
       profiles: db.listProfiles(),
       theme: settings.theme,
@@ -543,18 +527,6 @@ export function mountApi(app: Express, services: AppServices): void {
     });
     res.json({ settings: publicSettings(db, services.dataDir), restartRequired: true });
   }));
-  app.post('/api/settings/password', asyncRoute(async (req, res) => {
-    rateLimit(`password:${clientIp(req)}`, 5, 10 * 60_000);
-    const current = String(req.body?.current ?? '');
-    const next = String(req.body?.next ?? '');
-    const hash = db.getPasswordHash();
-    if (!hash || !verifyPassword(current, hash)) throw new HttpError(401, 'Current password is incorrect', 'AUTH');
-    if (next.length < 10) throw new HttpError(400, 'Use at least 10 characters', 'BAD_PASSWORD');
-    db.setPasswordHash(hashPassword(next));
-    await fs.promises.rm(path.join(services.dataDir, 'initial-password.txt'), { force: true });
-    res.json({ ok: true });
-  }));
-
   app.use(errorHandler);
 }
 

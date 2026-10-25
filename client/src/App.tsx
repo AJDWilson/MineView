@@ -8,7 +8,6 @@ import { ConfigPage } from './pages/ConfigPage';
 import { ConsolePage } from './pages/Console';
 import { Dashboard } from './pages/Dashboard';
 import { FilesPage } from './pages/Files';
-import { Login } from './pages/Login';
 import { MonitoringPage } from './pages/Monitoring';
 import { PlayersPage } from './pages/Players';
 import { PluginsPage } from './pages/Plugins';
@@ -23,13 +22,14 @@ export function App() {
   useEffect(() => {
     api<MeResponse>('/api/me').then(setMe).catch(() => setMe(null));
   }, []);
-  if (me === undefined) return <div className="boot"><img src="/logo.png" alt="Mineview" /></div>;
+  if (me === undefined) return <div className="boot"><img src="/image-logo.png" alt="Mineview" /></div>;
+  if (!me) return <div className="content">Mineview could not be reached. Refresh the page.</div>;
   return (
     <ToastProvider>
       <Routes>
-        <Route path="/login" element={me ? <Navigate to={me.setupComplete ? '/' : '/setup'} replace /> : <Login onSuccess={() => api<MeResponse>('/api/me').then(setMe)} />} />
-        <Route path="/setup" element={me ? <Setup me={me} onDone={(next) => setMe(next)} /> : <Navigate to="/login" replace />} />
-        <Route element={me ? (me.setupComplete ? <Shell me={me} onMe={setMe} /> : <Navigate to="/setup" replace />) : <Navigate to="/login" replace />}>
+        <Route path="/login" element={<Navigate to={me.setupComplete ? '/' : '/setup'} replace />} />
+        <Route path="/setup" element={<Setup me={me} onDone={setMe} />} />
+        <Route element={me.setupComplete ? <Shell me={me} onMe={setMe} /> : <Navigate to="/setup" replace />}>
           <Route index element={<Dashboard />} />
           <Route path="console" element={<ConsolePage />} />
           <Route path="players" element={<PlayersPage />} />
@@ -42,14 +42,14 @@ export function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="settings" element={<SettingsPage onMe={setMe} />} />
         </Route>
-        <Route path="*" element={<Missing signedIn={Boolean(me)} />} />
+        <Route path="*" element={<Missing />} />
       </Routes>
     </ToastProvider>
   );
 }
 
-function Missing({ signedIn }: { signedIn: boolean }) {
+function Missing() {
   const navigate = useNavigate();
-  useEffect(() => { navigate(signedIn ? '/' : '/login', { replace: true }); }, [navigate, signedIn]);
+  useEffect(() => { navigate('/', { replace: true }); }, [navigate]);
   return null;
 }

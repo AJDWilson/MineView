@@ -16,7 +16,6 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, { ...init, headers, credentials: 'same-origin' });
   const text = await response.text();
   const data = text ? JSON.parse(text) as { error?: string; code?: string } : {};
-  if (response.status === 401 && path !== '/api/me' && path !== '/api/auth/login') window.location.assign('/login');
   if (!response.ok) throw new ApiError(data.error || `Request failed (${response.status})`, response.status, data.code);
   return data as T;
 }

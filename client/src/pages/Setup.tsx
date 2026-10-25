@@ -38,7 +38,10 @@ export function Setup({ me, onDone }: { me: MeResponse; onDone: (me: MeResponse)
 
   return (
     <div className="content" style={{ maxWidth: 860, margin: '0 auto' }}>
-      <img className="auth-logo" src="/logo.png" alt="Mineview" style={{ justifySelf: 'center' }} />
+      <div className="auth-brand">
+        <img className="auth-mark" src="/image-logo.png" alt="" />
+        <img className="auth-word" src="/text-logo.png" alt="Mineview" />
+      </div>
       <div className="card stack">
         <div className="page-head">
           <h1>Set up your server</h1>

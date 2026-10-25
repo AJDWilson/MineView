@@ -12,6 +12,7 @@
     "dev:web": "vite --config client/vite.config.ts",
     "build": "vite build --config client/vite.config.ts",
     "start": "tsx server/src/index.ts",
+    "package:win": "node scripts/package-windows.mjs",
     "test": "tsx --test server/tests/unit.test.ts server/tests/api.test.ts server/tests/process.test.ts",
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit"
   },
@@ -40,6 +41,10 @@
     "@types/yauzl": "^2.10.3",
     "@vitejs/plugin-react": "^4.4.1",
     "concurrently": "^9.1.2",
+    "esbuild": "^0.28.2",
+    "png-to-ico": "^3.0.2",
+    "postject": "^1.0.0-alpha.6",
+    "rcedit": "^5.0.2",
     "tailwindcss": "^4.1.4",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",

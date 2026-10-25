@@ -3,8 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { BackupInfo, MetricPoint, PlayerEvent, Profile, ScheduleSpec, ServerSoftware, TaskInfo } from '../../shared/types.ts';
-import { generatePassword, hashPassword } from './util/password.ts';
-
 export interface AppSettings {
   theme: 'dark' | 'light';
   accent: 'grass' | 'emerald' | 'copper' | 'amethyst';
@@ -262,26 +260,6 @@ export class AppDb {
 
   saveSettings(settings: AppSettings): void {
     this.putSetting('settings', JSON.stringify(settings));
-  }
-
-  ensurePassword(initialPassword?: string): { created: boolean; password: string | null } {
-    const existing = this.setting('password_hash');
-    if (existing) return { created: false, password: null };
-    if (initialPassword && initialPassword.length < 10) {
-      throw new Error('MINEVIEW_INITIAL_PASSWORD must be at least 10 characters');
-    }
-    const provided = initialPassword && initialPassword.length >= 10 ? initialPassword : null;
-    const actual = provided ?? generatePassword();
-    this.putSetting('password_hash', hashPassword(actual));
-    return { created: true, password: provided ? null : actual };
-  }
-
-  getPasswordHash(): string | null {
-    return this.setting('password_hash');
-  }
-
-  setPasswordHash(hash: string): void {
-    this.putSetting('password_hash', hash);
   }
 
   createSession(): { token: string; csrf: string } {

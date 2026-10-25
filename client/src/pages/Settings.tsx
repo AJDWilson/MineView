@@ -10,7 +10,6 @@ export function SettingsPage({ onMe }: { onMe: (me: MeResponse) => void }) {
   const [settings, setSettings] = useState<SettingsPublic | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [checks, setChecks] = useState<DiagnosticCheck[]>([]);
-  const [passwords, setPasswords] = useState({ current: '', next: '' });
   const [profile, setProfile] = useState<Profile | null>(null);
 
   async function load() {
@@ -86,11 +85,6 @@ export function SettingsPage({ onMe }: { onMe: (me: MeResponse) => void }) {
         </div>
         <p className="help">Currently listening on {settings.bindHost}:{settings.bindPort}. The panel binds to 127.0.0.1 until remote access is enabled and Mineview is restarted.</p>
         <button className="btn primary">Save application settings</button>
-      </form>
-      <form className="card row" onSubmit={(event) => { event.preventDefault(); void api('/api/settings/password', { method: 'POST', body: JSON.stringify(passwords) }).then(() => toast('Password changed')).catch((error: unknown) => toast(error instanceof ApiError ? error.message : 'Password change failed', 'err')); }}>
-        <input className="input" type="password" placeholder="Current password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} aria-label="Current password" />
-        <input className="input" type="password" placeholder="New password" value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} aria-label="New password" />
-        <button className="btn">Change password</button>
       </form>
       <div className="card">
         <div className="row"><h2>Profiles</h2><button className="btn" onClick={() => navigate('/setup')}>Add server</button></div>

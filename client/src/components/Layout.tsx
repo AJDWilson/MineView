@@ -1,5 +1,5 @@
 import { Activity, Archive, CalendarClock, FolderTree, LayoutDashboard, Menu, Puzzle, Settings, SquareTerminal, Users, Globe, SlidersHorizontal } from 'lucide-react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import type { MeResponse, Profile, StatusSnapshot } from '../types';
@@ -21,7 +21,6 @@ const links = [
 export function Shell({ me, onMe }: { me: MeResponse; onMe: (me: MeResponse) => void }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<StatusSnapshot | null>(null);
-  const navigate = useNavigate();
   useEffect(() => {
     document.documentElement.dataset.theme = me.theme;
     document.documentElement.dataset.accent = me.accent;
@@ -50,8 +49,8 @@ export function Shell({ me, onMe }: { me: MeResponse; onMe: (me: MeResponse) => 
     <div className="shell">
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <div className="brand">
-          <img className="brand-logo" src="/logo.png" alt="Mineview" />
-          <div className="brand-note">Local server control</div>
+          <img className="brand-mark" src="/image-logo.png" alt="" />
+          <img className="brand-word" src="/text-logo.png" alt="Mineview" />
         </div>
         <nav className="nav">
           {links.map(([to, label, Icon]) => (
@@ -73,7 +72,6 @@ export function Shell({ me, onMe }: { me: MeResponse; onMe: (me: MeResponse) => 
             </label>
             <span className={`badge ${status?.status ?? 'offline'}`}>{status?.status ?? 'offline'}</span>
           </div>
-          <button className="btn ghost" onClick={() => { void api('/api/auth/logout', { method: 'POST', body: '{}' }).then(() => navigate('/login')); }}>Sign out</button>
         </header>
         <div className="content">
           <Outlet context={{ status, refreshMe: async () => onMe(await api<MeResponse>('/api/me')) }} />
